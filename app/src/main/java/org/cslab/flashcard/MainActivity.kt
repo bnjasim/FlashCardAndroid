@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    DisplayQuizzes()
+                    DisplayQuizzes(R.raw.current_affairs)
                 }
             }
         }
@@ -52,12 +52,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun DisplayQuizzes() {
+fun DisplayQuizzes(resourceId: Int) {
     // Retrieve the context
     val context = LocalContext.current
 
     // Read the contents of the text file
-    val quizList = readTextFile(context, R.raw.current_affairs)
+    val quizList = readTextFile(context, resourceId)
 
     LazyColumn(
         modifier = Modifier
