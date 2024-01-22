@@ -59,7 +59,6 @@ fun QuizFCard(
 
     // Define compose state variables
     var quizIndex by remember { mutableIntStateOf(qIndex) }
-    var answer by remember { mutableStateOf("") }
     // answer status can be Correct/Wrong/Not Attempted
     var answerStatus by remember { mutableStateOf(AnswerStatus.NA) }
     // keep track of percentage/accuracy 0 to 1 (not percentage)
@@ -73,6 +72,8 @@ fun QuizFCard(
 
     // The selected quiz
     val quiz = quizList[quizIndex]
+    val question = quiz.first.trim()
+    val answer = quiz.second.trim()
 
     Column (
         modifier = Modifier
@@ -133,7 +134,7 @@ fun QuizFCard(
                 .height(150.dp)
         ) {
             Text(
-                text = quiz.first,
+                text = question,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .padding(12.dp)
@@ -163,7 +164,7 @@ fun QuizFCard(
                 )
 
                 Text(
-                    text = answer,
+                    text = if (answerStatus == AnswerStatus.NA) "" else answer,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
                         .padding(12.dp)
@@ -215,7 +216,7 @@ fun QuizFCard(
                     val actualAnswer = quiz.second.trim().lowercase()
                     val uAnswer = userAnswer.trim().lowercase()
                     // Get the content of the text field
-                    correct = if (userAnswer.trim().length >= 4) {
+                    correct = if (uAnswer.length >= 4) {
                         // compare against the actual answer
                         // userAnswer should be a subString of actual answer
                         // case insensitive!
@@ -249,8 +250,6 @@ fun QuizFCard(
                         numAttempted++
                         successRate = numCorrectAnswers/numAttempted
                     }
-                    // Display the Correct Answer either way!
-                    answer = quiz.second.trim()
                 }
             ) {
                 Text(
@@ -279,8 +278,6 @@ fun QuizFCard(
                     val numCorrectAnswers = successRate * numAttempted
                     numAttempted++
                     successRate = numCorrectAnswers/numAttempted
-                    // Display the Correct Answer
-                    answer = quiz.second.trim()
                 },
                 border = BorderStroke(width = 3.dp, color = Crimson),
                 colors = ButtonDefaults.buttonColors(
@@ -309,8 +306,6 @@ fun QuizFCard(
                     if (quizWeights[quizIndex] == 0) {
                         numQuizDone++
                     }
-                    // Display the Correct Answer
-                    answer = quiz.second.trim()
                 },
                 border = BorderStroke(width = 3.dp, color = DarkGreen)
 
@@ -325,7 +320,6 @@ fun QuizFCard(
                     // Reset the question by random sampling
                     quizIndex = sampleIndex(quizWeights)
                     // hide the correct answer!
-                    answer = ""
                     answerStatus = AnswerStatus.NA
                 },
                 colors = ButtonDefaults.buttonColors(
