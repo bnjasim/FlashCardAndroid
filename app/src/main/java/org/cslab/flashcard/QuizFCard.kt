@@ -1,6 +1,6 @@
 package org.cslab.flashcard
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
@@ -36,6 +37,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.cslab.flashcard.ui.theme.Crimson
+import org.cslab.flashcard.ui.theme.DarkGreen
 import org.cslab.flashcard.ui.theme.FlashCardTheme
 import kotlin.random.Random
 
@@ -51,9 +54,8 @@ fun QuizFCard(
     // The weight is reduced by 2 if the quiz is skipped.
     var quizWeights = MutableList(totalNumQuiz) { 2 }
 
-    // The selected quiz
-    var quiz = quizList[qIndex]
     // Define compose state variables
+    var quizIndex by remember { mutableIntStateOf(qIndex) }
     var answer by remember { mutableStateOf("") }
     // keep track of percentage/accuracy 0 to 1 (not percentage)
     var successRate by remember { mutableFloatStateOf(1F) }
@@ -61,6 +63,9 @@ fun QuizFCard(
     var numQuizDone by remember { mutableIntStateOf(0) }
     // User answer
     var userAnswer by remember { mutableStateOf("") }
+
+    // The selected quiz
+    var quiz = quizList[quizIndex]
 
     Column (
         modifier = Modifier
@@ -188,7 +193,52 @@ fun QuizFCard(
             }
         }
 
+        // Spacer to add vertical space
+        Spacer(modifier = Modifier.height(32.dp))
 
+        // A bottom row for 3 Buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Left-aligned button
+            Button(
+                onClick = { /* Handle "No Idea" button click */ },
+                border = BorderStroke(width = 3.dp, color = Crimson),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(text = "No Idea")
+            }
+
+            // Center-aligned button
+            Button(
+                onClick = { /* Handle "I Know" button click */ },
+                border = BorderStroke(width = 3.dp, color = DarkGreen)
+
+            ) {
+                Text(text = "I Know")
+            }
+
+            // Right-aligned button with arrow icon
+            Button(
+                modifier = Modifier.width(80.dp),
+                onClick = {
+                          // Reset the question by random sampling
+                          quizIndex = sampleIndex(quizWeights)
+                          },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Gray)
+            ) {
+                Icon(
+                    Icons.Default.ArrowForward,
+                    contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
     }
 }
 
