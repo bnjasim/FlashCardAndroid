@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,11 +59,15 @@ fun QuizFCard(
     // Define compose state variables
     var quizIndex by remember { mutableIntStateOf(qIndex) }
     var answer by remember { mutableStateOf("") }
+    // answer status can be Correct/Wrong/Not Attempted
+    var answerStatus by remember { mutableStateOf(AnswerStatus.NA) }
     // keep track of percentage/accuracy 0 to 1 (not percentage)
     var successRate by remember { mutableFloatStateOf(1F) }
     // keep track of the number of questions finished/learned
     var numQuizDone by remember { mutableIntStateOf(0) }
-    // User answer
+    // keep track of the number of question attempted
+    var numAttempted by remember { mutableIntStateOf(0) }
+    // User typed answer
     var userAnswer by remember { mutableStateOf("") }
 
     // The selected quiz
@@ -139,12 +145,29 @@ fun QuizFCard(
                 .padding(8.dp)
                 .height(150.dp)
         ) {
-            Text(
-                text = answer,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .padding(12.dp)
-            )
+            Column {
+                Text(
+                    text = when (answerStatus) {
+                        AnswerStatus.CORRECT -> "Correct!"
+                        AnswerStatus.WRONG -> "Wrong"
+                        AnswerStatus.NA -> ""
+                    },
+                    color = when (answerStatus) {
+                        AnswerStatus.CORRECT -> DarkGreen
+                        AnswerStatus.WRONG -> Crimson
+                        else -> MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier
+                        .padding(12.dp)
+                )
+
+                Text(
+                    text = answer,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .padding(12.dp)
+                )
+            }
         }
 
         // Spacer to add vertical space
@@ -175,15 +198,35 @@ fun QuizFCard(
                 value = userAnswer,
                 onValueChange = { userAnswer = it },
                 label = { Text("Answer") },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done
+                )
             )
 
             // Go Button
             Button(
-                onClick = { /* onGoClick(userInput) */ },
                 modifier = Modifier
                     .padding(start = 8.dp),
-                shape = MaterialTheme.shapes.small
+                shape = MaterialTheme.shapes.small,
+                onClick = {
+                    var correct = false
+                    val actualAnswer = quiz.second.trim().lowercase()
+                    val uAnswer = userAnswer.trim().lowercase()
+                    // Get the content of the text field
+                    correct = if (userAnswer.trim().length >= 4) {
+                        // compare against the actual answer
+                        // userAnswer should be a subString of actual answer
+                        // case insensitive!
+                        actualAnswer.contains(uAnswer)
+                    } else {
+                        (actualAnswer == uAnswer)
+                    }
+                    // if correct answer
+                    if (correct) {
+
+                    }
+                }
             ) {
                 Text(
                     text = "Go",
