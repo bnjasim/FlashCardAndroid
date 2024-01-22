@@ -212,11 +212,29 @@ fun QuizFCard(
                     .padding(start = 8.dp),
                 shape = MaterialTheme.shapes.small,
                 onClick = {
-                    var correct = false
-                    val actualAnswer = quiz.second.trim().lowercase()
+                    // Button shouldn't work if the question is answered already
+                    if (answerStatus != AnswerStatus.NA)
+                        return@Button
+
+                    val actualAnswer = answer.lowercase()
+                    // content inside the text field
                     val uAnswer = userAnswer.trim().lowercase()
-                    // Get the content of the text field
-                    correct = if (uAnswer.length >= 4) {
+
+                    // if actual answer is longer than 4 characters
+                    if (actualAnswer.length >= 4 && uAnswer.length < 4)
+                        return@Button
+
+                    // if actual answer is shorter than 4 characters
+                    if (actualAnswer.length < 4 && actualAnswer.length != uAnswer.length)
+                        return@Button
+
+                    // if malformed answer
+                    if (actualAnswer.isEmpty()) {
+                        Log.e("myTag", "Empty Answer.")
+                        return@Button
+                    }
+
+                    val correct = if (uAnswer.length >= 4) {
                         // compare against the actual answer
                         // userAnswer should be a subString of actual answer
                         // case insensitive!
@@ -273,6 +291,9 @@ fun QuizFCard(
             // Left-aligned button
             Button(
                 onClick = {
+                    // Button shouldn't work if the question is answered already
+                    if (answerStatus != AnswerStatus.NA) return@Button
+
                     answerStatus = AnswerStatus.WRONG
                     // update the success rate
                     val numCorrectAnswers = successRate * numAttempted
@@ -290,6 +311,9 @@ fun QuizFCard(
             // Center-aligned button
             Button(
                 onClick = {
+                    // Button shouldn't work if the question is answered already
+                    if (answerStatus != AnswerStatus.NA) return@Button
+
                     answerStatus = AnswerStatus.CORRECT
                     // update the success rate
                     val numCorrectAnswers = successRate * numAttempted
@@ -321,6 +345,7 @@ fun QuizFCard(
                     quizIndex = sampleIndex(quizWeights)
                     // hide the correct answer!
                     answerStatus = AnswerStatus.NA
+                    userAnswer = ""
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Gray)
