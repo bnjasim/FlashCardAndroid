@@ -62,7 +62,13 @@ fun DisplayQuizScreen(
     else {
         // Randomly pick a quiz as the first one to display
         val quizIndex = Random.nextInt(quizList.size)
+
+        // A weight of 2 is assigned to each quiz initially.
+        // The weight is reduced by 1 when the quiz is answered correctly.
+        // The weight is reduced by 2 if the quiz is skipped.
+        val quizWeights = MutableList(quizList.size) { 2 }
+
         // Display the Quiz as a Flash Card
-        QuizFCard(quizList, quizIndex)
+        QuizFCard(quizList, quizWeights, quizIndex)
     }
 }

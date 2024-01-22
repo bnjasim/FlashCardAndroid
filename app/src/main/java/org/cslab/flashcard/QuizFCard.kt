@@ -48,14 +48,11 @@ import kotlin.random.Random
 @Composable
 fun QuizFCard(
     quizList: List<Pair<String, String>>,
+    quizWeights: MutableList<Int>,
     qIndex: Int
 ) {
     // Total number of quizzes
     val totalNumQuiz = quizList.size
-    // A weight of 2 is assigned to each quiz initially.
-    // The weight is reduced by 1 when the quiz is answered correctly.
-    // The weight is reduced by 2 if the quiz is skipped.
-    val quizWeights = MutableList(totalNumQuiz) { 2 }
 
     // Define compose state variables
     var quizIndex by remember { mutableIntStateOf(qIndex) }
@@ -384,6 +381,8 @@ val previewQuizList = listOf(
     Pair("Preview Question 3", "Preview Answer 3")
 )
 
+val previewQuizWeights = MutableList(previewQuizList.size) { 2 }
+
 @Composable
 @Preview(showBackground = true)
 fun DisplayScreenPreviewLight() {
@@ -393,7 +392,7 @@ fun DisplayScreenPreviewLight() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            QuizFCard(previewQuizList, 0)
+            QuizFCard(previewQuizList, previewQuizWeights,0)
         }
     }
 }
@@ -407,7 +406,7 @@ fun DisplayScreenPreviewDark() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            QuizFCard(previewQuizList, 1)
+            QuizFCard(previewQuizList, previewQuizWeights,1)
         }
     }
 }
