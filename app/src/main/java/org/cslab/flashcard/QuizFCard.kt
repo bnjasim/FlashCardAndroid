@@ -150,9 +150,10 @@ fun QuizFCard(
                         AnswerStatus.CORRECT -> "Correct!"
                         AnswerStatus.WRONG -> "Wrong"
                         AnswerStatus.NA -> ""
+                        AnswerStatus.ALLDONE -> "Congratulations!\nAll Done!"
                     },
                     color = when (answerStatus) {
-                        AnswerStatus.CORRECT -> DarkGreen
+                        AnswerStatus.CORRECT, AnswerStatus.ALLDONE -> DarkGreen
                         AnswerStatus.WRONG -> Crimson
                         else -> MaterialTheme.colorScheme.primary
                     },
@@ -161,7 +162,9 @@ fun QuizFCard(
                 )
 
                 Text(
-                    text = if (answerStatus == AnswerStatus.NA) "" else answer,
+                    text = if (
+                        answerStatus == AnswerStatus.NA  || answerStatus == AnswerStatus.ALLDONE
+                        ) "" else answer,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
                         .padding(12.dp)
@@ -338,6 +341,11 @@ fun QuizFCard(
             Button(
                 modifier = Modifier.width(80.dp),
                 onClick = {
+                    // Stoop when all the weights are zero
+                    if (numQuizDone == totalNumQuiz) {
+                        answerStatus = AnswerStatus.ALLDONE
+                        return@Button
+                    }
                     // Reset the question by random sampling
                     quizIndex = sampleIndex(quizWeights)
                     // hide the correct answer!
