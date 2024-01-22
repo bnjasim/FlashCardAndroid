@@ -9,8 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,7 +40,10 @@ import org.cslab.flashcard.ui.theme.FlashCardTheme
 import kotlin.random.Random
 
 @Composable
-fun QuizFCard(quizList: List<Pair<String, String>>) {
+fun QuizFCard(
+    quizList: List<Pair<String, String>>,
+    qIndex: Int
+) {
     // Total number of quizzes
     val totalNumQuiz = quizList.size
     // A weight of 2 is assigned to each quiz initially.
@@ -44,8 +51,9 @@ fun QuizFCard(quizList: List<Pair<String, String>>) {
     // The weight is reduced by 2 if the quiz is skipped.
     var quizWeights = MutableList(totalNumQuiz) { 2 }
 
+    // The selected quiz
+    var quiz = quizList[qIndex]
     // Define compose state variables
-    var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     // keep track of percentage/accuracy 0 to 1 (not percentage)
     var successRate by remember { mutableFloatStateOf(1F) }
@@ -105,14 +113,6 @@ fun QuizFCard(quizList: List<Pair<String, String>>) {
             )
         }
 
-        // sample a quiz
-        val quizIndex = sampleIndex(quizWeights)
-        val quiz = quizList[quizIndex]
-        question = if (quizWeights.sum() == 0) {
-            "Congratulations!\n The Quiz is finished!"
-        } else {
-            quiz.first
-        }
         // Display the Question Area
         Card (
             modifier = Modifier
@@ -121,7 +121,7 @@ fun QuizFCard(quizList: List<Pair<String, String>>) {
                 .height(150.dp)
         ) {
             Text(
-                text = question,
+                text = quiz.first,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .padding(12.dp)
@@ -187,6 +187,8 @@ fun QuizFCard(quizList: List<Pair<String, String>>) {
                 )
             }
         }
+
+
     }
 }
 
@@ -218,14 +220,13 @@ val previewQuizList = listOf(
 @Composable
 @Preview(showBackground = true)
 fun DisplayScreenPreviewLight() {
-
     // Set the light theme
     FlashCardTheme(darkTheme = false) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            QuizFCard(previewQuizList)
+            QuizFCard(previewQuizList, 0)
         }
     }
 }
@@ -239,7 +240,7 @@ fun DisplayScreenPreviewDark() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            QuizFCard(previewQuizList)
+            QuizFCard(previewQuizList, 1)
         }
     }
 }
