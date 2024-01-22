@@ -1,5 +1,6 @@
 package org.cslab.flashcard
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,7 +55,7 @@ fun QuizFCard(
     // A weight of 2 is assigned to each quiz initially.
     // The weight is reduced by 1 when the quiz is answered correctly.
     // The weight is reduced by 2 if the quiz is skipped.
-    var quizWeights = MutableList(totalNumQuiz) { 2 }
+    val quizWeights = MutableList(totalNumQuiz) { 2 }
 
     // Define compose state variables
     var quizIndex by remember { mutableIntStateOf(qIndex) }
@@ -71,7 +72,7 @@ fun QuizFCard(
     var userAnswer by remember { mutableStateOf("") }
 
     // The selected quiz
-    var quiz = quizList[quizIndex]
+    val quiz = quizList[quizIndex]
 
     Column (
         modifier = Modifier
@@ -224,8 +225,32 @@ fun QuizFCard(
                     }
                     // if correct answer
                     if (correct) {
-
+                        answerStatus = AnswerStatus.CORRECT
+                        // update the success rate
+                        val numCorrectAnswers = successRate * numAttempted
+                        numAttempted++
+                        successRate = (numCorrectAnswers + 1)/numAttempted
+                        // Subtract weight of this quiz
+                        quizWeights[quizIndex]--
+                        if(quizWeights[quizIndex] < 0) {
+                            // This should never happen!
+                            Log.e("myTag", "weight went below 0. Fishy!!")
+                            quizWeights[quizIndex] = 0
+                        }
+                        // update the number of Done questions
+                        if (quizWeights[quizIndex] == 0) {
+                            numQuizDone++
+                        }
                     }
+                    else {
+                        answerStatus = AnswerStatus.WRONG
+                        // update the success rate
+                        val numCorrectAnswers = successRate * numAttempted
+                        numAttempted++
+                        successRate = numCorrectAnswers/numAttempted
+                    }
+                    // Display the Correct Answer either way!
+                    answer = quiz.second.trim()
                 }
             ) {
                 Text(
@@ -248,7 +273,15 @@ fun QuizFCard(
         ) {
             // Left-aligned button
             Button(
-                onClick = { /* Handle "No Idea" button click */ },
+                onClick = {
+                    answerStatus = AnswerStatus.WRONG
+                    // update the success rate
+                    val numCorrectAnswers = successRate * numAttempted
+                    numAttempted++
+                    successRate = numCorrectAnswers/numAttempted
+                    // Display the Correct Answer
+                    answer = quiz.second.trim()
+                },
                 border = BorderStroke(width = 3.dp, color = Crimson),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
@@ -259,7 +292,26 @@ fun QuizFCard(
 
             // Center-aligned button
             Button(
-                onClick = { /* Handle "I Know" button click */ },
+                onClick = {
+                    answerStatus = AnswerStatus.CORRECT
+                    // update the success rate
+                    val numCorrectAnswers = successRate * numAttempted
+                    numAttempted++
+                    successRate = (numCorrectAnswers + 1)/numAttempted
+                    // Subtract weight of this quiz
+                    quizWeights[quizIndex]--
+                    if(quizWeights[quizIndex] < 0) {
+                        // This should never happen!
+                        Log.e("myTag", "weight went below 0. Fishy!!")
+                        quizWeights[quizIndex] = 0
+                    }
+                    // update the number of Done questions
+                    if (quizWeights[quizIndex] == 0) {
+                        numQuizDone++
+                    }
+                    // Display the Correct Answer
+                    answer = quiz.second.trim()
+                },
                 border = BorderStroke(width = 3.dp, color = DarkGreen)
 
             ) {
@@ -270,9 +322,12 @@ fun QuizFCard(
             Button(
                 modifier = Modifier.width(80.dp),
                 onClick = {
-                          // Reset the question by random sampling
-                          quizIndex = sampleIndex(quizWeights)
-                          },
+                    // Reset the question by random sampling
+                    quizIndex = sampleIndex(quizWeights)
+                    // hide the correct answer!
+                    answer = ""
+                    answerStatus = AnswerStatus.NA
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Gray)
             ) {
