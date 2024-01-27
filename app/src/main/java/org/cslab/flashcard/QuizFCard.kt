@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,15 +56,15 @@ fun QuizFCard(
     val totalNumQuiz = quizList.size
 
     // Define compose state variables
-    var quizIndex by remember { mutableIntStateOf(qIndex) }
-    // answer status can be Correct/Wrong/Not Attempted
-    var answerStatus by remember { mutableStateOf(AnswerStatus.NA) }
+    var quizIndex by rememberSaveable { mutableIntStateOf(qIndex) }
+    // answer status can be Correct/Wrong/Not Attempted/All Done!
+    var answerStatus by rememberSaveable { mutableStateOf(AnswerStatus.NA) }
     // keep track of percentage/accuracy 0 to 1 (not percentage)
-    var successRate by remember { mutableFloatStateOf(1F) }
+    var successRate by rememberSaveable { mutableFloatStateOf(1F) }
     // keep track of the number of questions finished/learned
-    var numQuizDone by remember { mutableIntStateOf(0) }
+    var numQuizDone by rememberSaveable { mutableIntStateOf(0) }
     // keep track of the number of question attempted
-    var numAttempted by remember { mutableIntStateOf(0) }
+    var numAttempted by rememberSaveable { mutableIntStateOf(0) }
     // User typed answer
     var userAnswer by remember { mutableStateOf("") }
 
@@ -101,13 +102,26 @@ fun QuizFCard(
                 }
             }
 
+            // Text on the left
+            Text(
+                text = "Quiz: $numAttempted",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                modifier = Modifier
+                    .padding(start = 6.dp)
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Text at the middle
             Text(
                 text = successString,
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.Bold,
                 ),
                 modifier = Modifier
-                    .padding(end = 8.dp)
+                    .padding(2.dp)
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -119,7 +133,7 @@ fun QuizFCard(
                     fontWeight = FontWeight.Bold
                 ),
                 modifier = Modifier
-                    .padding(start = 8.dp)
+                    .padding(end = 6.dp)
             )
         }
 
