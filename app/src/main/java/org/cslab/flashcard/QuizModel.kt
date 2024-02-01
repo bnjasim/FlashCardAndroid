@@ -2,20 +2,148 @@ package org.cslab.flashcard
 
 import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
+import kotlin.random.Random
 
-class QuizModel(val context: Context, val resourceId: Int) {
+class QuizModel(
+    private val context: Context,
+    private val resourceId: Int
+) {
     // Read the contents of the text file
-    val quizList: MutableList<Pair<String, String>> = mutableListOf()
+    private val quizList: MutableList<Pair<String, String>> = mutableListOf()
+    private var quizIndex: Int
+    private val quizWeights: MutableList<Int>
+    // keep track of the number of question attempted
+    val numAttempted = MutableStateFlow(0)
+    // keep track of accuracy 0 to 1 (not percentage)
+    val successRate = MutableStateFlow(1F) // make private later!
+    // define a new state flow that is derived from the successRate state flow
+//    val successPercent: StateFlow<Int> = successRate.transform {rate ->
+//        emit((rate * 100).toInt())
+//    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 100)
+    // keep track of the number of questions finished/learned
+    val numQuizDone = MutableStateFlow(0)
+    // Answer status flow
+    val answerStatus = MutableStateFlow(AnswerStatus.NA)
+    // The individual quiz as a state flow
+    val currentQuiz = MutableStateFlow(Pair("", ""))
+
     init {
         readTextFile()
+        // Randomly pick a quiz as the first one to display
+        // startIndex = Random.nextInt(quizList.size)
+        // A mutable flow variable whose value will be collected in the UI
+        quizIndex = Random.nextInt(quizList.size)
+        currentQuiz.value = quizList[quizIndex]
+        // A weight of 2 is assigned to each quiz initially.
+        // The weight is reduced by 1 when the quiz is answered correctly.
+        // The weight is reduced by 2 if the quiz is skipped.
+        quizWeights = MutableList(quizList.size) { 2 }
     }
 
     fun isEmpty(): Boolean {
         return quizList.isEmpty()
     }
+
+    fun getSize(): Int {
+        return quizList.size
+    }
+
+    fun getAllQuiz(): MutableList<Pair<String, String>> {
+        return quizList
+    }
+    fun getCurrentQuiz(): Pair<String, String> {
+        return quizList[quizIndex]
+    }
+
+    fun checkAnswer(userAnswer: String) {
+        val actualAnswer = currentQuiz.value.second.lowercase()
+        val uAnswer = userAnswer.trim().lowercase()
+        val correct = if (userAnswer.length >= 4) {
+            // compare against the actual answer
+            // userAnswer should be a subString of actual answer
+            // case insensitive!
+            actualAnswer.contains(uAnswer)
+        } else {
+            (actualAnswer == uAnswer)
+        }
+        // if correct answer
+        if (correct) {
+            markAsCorrect()
+        }
+        else {
+            markAsWrong()
+        }
+    }
+
+    fun markAsCorrect() {
+        // should execute only if the question is Not Answered yet!
+        if (answerStatus.value != AnswerStatus.NA) return
+        // Otherwise
+        answerStatus.value = AnswerStatus.CORRECT
+        // update the success rate
+        val numCorrectAnswers = successRate.value * numAttempted.value
+        numAttempted.value++
+        successRate.value = (numCorrectAnswers + 1)/numAttempted.value
+        // Subtract weight of this quiz
+        quizWeights[quizIndex]--
+        if(quizWeights[quizIndex] < 0) {
+            // This should never happen!
+            Log.e("myTag", "weight went below 0. Fishy!!")
+            quizWeights[quizIndex] = 0
+        }
+        // update the number of Done questions
+        if (quizWeights[quizIndex] == 0) {
+            numQuizDone.value++
+        }
+    }
+
+    fun markAsWrong() {
+        // should execute only if the question is Not Answered yet!
+        if (answerStatus.value != AnswerStatus.NA) return
+        // Otherwise
+        answerStatus.value = AnswerStatus.WRONG
+        // update the success rate
+        val numCorrectAnswers = successRate.value * numAttempted.value
+        numAttempted.value++
+        successRate.value = numCorrectAnswers/numAttempted.value
+    }
+
+    fun nextQuiz() {
+        // Stop when all the weights are zero
+        if (numQuizDone.value == getSize()) {
+            answerStatus.value = AnswerStatus.ALLDONE
+        }
+        else {
+            // Reset the question by random sampling
+            quizIndex = sampleIndex()
+            currentQuiz.value = quizList[quizIndex]
+            // hide the correct answer!
+            answerStatus.value = AnswerStatus.NA
+        }
+    }
+
+    // Function to perform weighted random sampling
+    // The weights are 0, 1 or 2 (strictly non-negative)
+    private fun sampleIndex(): Int {
+        val totalWeight = quizWeights.sum()
+        val randomValue = Random.nextFloat() * totalWeight
+
+        var cumulativeWeight = 0
+        for (index in quizWeights.indices) {
+            cumulativeWeight += quizWeights[index]
+            if (randomValue < cumulativeWeight) {
+                return index
+            }
+        }
+
+        // In case of issues, return the first index as a fallback
+        return 0
+    }
+
     private fun readTextFile() {
         val inputStream: InputStream = context.resources.openRawResource(resourceId)
         val reader = BufferedReader(InputStreamReader(inputStream))

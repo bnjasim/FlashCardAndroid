@@ -34,7 +34,7 @@ fun DisplayQuizList(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(model.quizList) { quiz ->
+        items(model.getAllQuiz()) { quiz ->
             QuizItem(quiz = quiz)
             Spacer(modifier = Modifier.height(16.dp))
         }

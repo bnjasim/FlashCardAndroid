@@ -1,6 +1,5 @@
 package org.cslab.flashcard
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,16 +22,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -44,32 +42,26 @@ import androidx.compose.ui.unit.sp
 import org.cslab.flashcard.ui.theme.Crimson
 import org.cslab.flashcard.ui.theme.DarkGreen
 import org.cslab.flashcard.ui.theme.FlashCardTheme
-import kotlin.random.Random
 
 @Composable
 fun QuizFCard(
-    quizList: List<Pair<String, String>>,
-    quizWeights: MutableList<Int>,
-    qIndex: Int
+    model: QuizModel
 ) {
     // Total number of quizzes
-    val totalNumQuiz = quizList.size
-
-    // Define compose state variables
-    var quizIndex by rememberSaveable { mutableIntStateOf(qIndex) }
+    val totalNumQuiz = model.getSize()
     // answer status can be Correct/Wrong/Not Attempted/All Done!
-    var answerStatus by rememberSaveable { mutableStateOf(AnswerStatus.NA) }
+    val answerStatus by model.answerStatus.collectAsState()
     // keep track of percentage/accuracy 0 to 1 (not percentage)
-    var successRate by rememberSaveable { mutableFloatStateOf(1F) }
+    val successRate by model.successRate.collectAsState()
+    // val successPercent by model.successPercent.collectAsState()
     // keep track of the number of questions finished/learned
-    var numQuizDone by rememberSaveable { mutableIntStateOf(0) }
+    val numQuizDone by model.numQuizDone.collectAsState()
     // keep track of the number of question attempted
-    var numAttempted by rememberSaveable { mutableIntStateOf(0) }
-    // User typed answer
-    var userAnswer by remember { mutableStateOf("") }
-
+    val numAttempted by model.numAttempted.collectAsState()
+    // User typed answer in the text field
+    var userAnswer by rememberSaveable { mutableStateOf("") }
     // The selected quiz
-    val quiz = quizList[quizIndex]
+    val quiz by model.currentQuiz.collectAsState()
     val question = quiz.first.trim()
     val answer = quiz.second.trim()
 
@@ -84,9 +76,6 @@ fun QuizFCard(
                 .fillMaxWidth()
                 .padding(8.dp)
         ) {
-            // success rate on the left as percentage
-            val successPercent = (successRate * 100).toInt()
-
             // Create an annotated string with different styles
             val successString = buildAnnotatedString {
                 withStyle(style = SpanStyle(
@@ -98,7 +87,7 @@ fun QuizFCard(
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )) {
-                    append("$successPercent%")
+                    append("${(successRate*100).toInt()}%")
                 }
             }
 
@@ -226,62 +215,12 @@ fun QuizFCard(
                     .padding(start = 8.dp),
                 shape = MaterialTheme.shapes.small,
                 onClick = {
-                    // Button shouldn't work if the question is answered already
-                    if (answerStatus != AnswerStatus.NA)
-                        return@Button
-
-                    val actualAnswer = answer.lowercase()
-                    // content inside the text field
-                    val uAnswer = userAnswer.trim().lowercase()
-
                     // if actual answer is longer than 4 characters
-                    if (actualAnswer.length >= 4 && uAnswer.length < 4)
+                    // this can be done inside the checkAnswer function as well
+                    if (answer.length >= 4 && userAnswer.trim().length < 4)
                         return@Button
-
-                    // if actual answer is shorter than 4 characters
-                    if (actualAnswer.length < 4 && actualAnswer.length != uAnswer.length)
-                        return@Button
-
-                    // if malformed answer
-                    if (actualAnswer.isEmpty()) {
-                        Log.e("myTag", "Empty Answer.")
-                        return@Button
-                    }
-
-                    val correct = if (uAnswer.length >= 4) {
-                        // compare against the actual answer
-                        // userAnswer should be a subString of actual answer
-                        // case insensitive!
-                        actualAnswer.contains(uAnswer)
-                    } else {
-                        (actualAnswer == uAnswer)
-                    }
-                    // if correct answer
-                    if (correct) {
-                        answerStatus = AnswerStatus.CORRECT
-                        // update the success rate
-                        val numCorrectAnswers = successRate * numAttempted
-                        numAttempted++
-                        successRate = (numCorrectAnswers + 1)/numAttempted
-                        // Subtract weight of this quiz
-                        quizWeights[quizIndex]--
-                        if(quizWeights[quizIndex] < 0) {
-                            // This should never happen!
-                            Log.e("myTag", "weight went below 0. Fishy!!")
-                            quizWeights[quizIndex] = 0
-                        }
-                        // update the number of Done questions
-                        if (quizWeights[quizIndex] == 0) {
-                            numQuizDone++
-                        }
-                    }
-                    else {
-                        answerStatus = AnswerStatus.WRONG
-                        // update the success rate
-                        val numCorrectAnswers = successRate * numAttempted
-                        numAttempted++
-                        successRate = numCorrectAnswers/numAttempted
-                    }
+                    // update the state variables in the model
+                    model.checkAnswer(userAnswer)
                 }
             ) {
                 Text(
@@ -306,13 +245,9 @@ fun QuizFCard(
             Button(
                 onClick = {
                     // Button shouldn't work if the question is answered already
-                    if (answerStatus != AnswerStatus.NA) return@Button
-
-                    answerStatus = AnswerStatus.WRONG
-                    // update the success rate
-                    val numCorrectAnswers = successRate * numAttempted
-                    numAttempted++
-                    successRate = numCorrectAnswers/numAttempted
+                    // if (answerStatus != AnswerStatus.NA) return@Button
+                    // update the model parameters
+                    model.markAsWrong()
                 },
                 border = BorderStroke(width = 3.dp, color = Crimson),
                 colors = ButtonDefaults.buttonColors(
@@ -326,24 +261,10 @@ fun QuizFCard(
             Button(
                 onClick = {
                     // Button shouldn't work if the question is answered already
-                    if (answerStatus != AnswerStatus.NA) return@Button
-
-                    answerStatus = AnswerStatus.CORRECT
-                    // update the success rate
-                    val numCorrectAnswers = successRate * numAttempted
-                    numAttempted++
-                    successRate = (numCorrectAnswers + 1)/numAttempted
-                    // Subtract weight of this quiz
-                    quizWeights[quizIndex]--
-                    if(quizWeights[quizIndex] < 0) {
-                        // This should never happen!
-                        Log.e("myTag", "weight went below 0. Fishy!!")
-                        quizWeights[quizIndex] = 0
-                    }
-                    // update the number of Done questions
-                    if (quizWeights[quizIndex] == 0) {
-                        numQuizDone++
-                    }
+                    // if (answerStatus != AnswerStatus.NA) return@Button
+                    // update model parameters
+                    // the function takes care of (answerStatus == AnswerStatus.NA)
+                    model.markAsCorrect()
                 },
                 border = BorderStroke(width = 3.dp, color = DarkGreen)
 
@@ -355,15 +276,10 @@ fun QuizFCard(
             Button(
                 modifier = Modifier.width(80.dp),
                 onClick = {
-                    // Stoop when all the weights are zero
-                    if (numQuizDone == totalNumQuiz) {
-                        answerStatus = AnswerStatus.ALLDONE
-                        return@Button
-                    }
-                    // Reset the question by random sampling
-                    quizIndex = sampleIndex(quizWeights)
-                    // hide the correct answer!
-                    answerStatus = AnswerStatus.NA
+                    // Change states to the next quiz
+                    // Takes care of the quiz state: (answerState == AnswerState.ALLDONE)
+                    model.nextQuiz()
+                    // clear the text field
                     userAnswer = ""
                 },
                 colors = ButtonDefaults.buttonColors(
@@ -378,33 +294,6 @@ fun QuizFCard(
     }
 }
 
-// Function to perform weighted random sampling
-// The weights are 0, 1 or 2 (strictly non-negative)
-fun sampleIndex(weights: List<Int>): Int {
-    val totalWeight = weights.sum()
-    val randomValue = Random.nextFloat() * totalWeight
-
-    var cumulativeWeight = 0
-    for (index in weights.indices) {
-        cumulativeWeight += weights[index]
-        if (randomValue < cumulativeWeight) {
-            return index
-        }
-    }
-
-    // In case of issues, return the first index as a fallback
-    return 0
-}
-
-
-val previewQuizList = listOf(
-    Pair("Preview Question 1", "Preview Answer 1"),
-    Pair("Preview Question 2", "Preview Answer 2"),
-    Pair("Preview Question 3", "Preview Answer 3")
-)
-
-val previewQuizWeights = MutableList(previewQuizList.size) { 2 }
-
 @Composable
 @Preview(showBackground = true)
 fun DisplayScreenPreviewLight() {
@@ -414,7 +303,8 @@ fun DisplayScreenPreviewLight() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            QuizFCard(previewQuizList, previewQuizWeights,0)
+            val previewModel = QuizModel(LocalContext.current, R.raw.current_affairs)
+            QuizFCard(previewModel)
         }
     }
 }
@@ -428,7 +318,8 @@ fun DisplayScreenPreviewDark() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            QuizFCard(previewQuizList, previewQuizWeights,1)
+            val previewModel = QuizModel(LocalContext.current, R.raw.current_affairs)
+            QuizFCard(previewModel)
         }
     }
 }
