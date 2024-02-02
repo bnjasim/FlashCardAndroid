@@ -52,18 +52,27 @@ fun QuizFCard(
     // answer status can be Correct/Wrong/Not Attempted/All Done!
     val answerStatus by model.answerStatus.collectAsState()
     // keep track of percentage/accuracy 0 to 1 (not percentage)
-    val successRate by model.successRate.collectAsState()
+    var successRate = 1F// by model.successRate.collectAsState()
     // val successPercent by model.successPercent.collectAsState()
     // keep track of the number of questions finished/learned
-    val numQuizDone by model.numQuizDone.collectAsState()
+    var numQuizDone = 0 // by model.numQuizDone.collectAsState()
     // keep track of the number of question attempted
-    val numAttempted by model.numAttempted.collectAsState()
+    var numAttempted = 0 // by model.numAttempted.collectAsState()
     // User typed answer in the text field
     var userAnswer by rememberSaveable { mutableStateOf("") }
     // The selected quiz
-    val quiz by model.currentQuiz.collectAsState()
-    val question = quiz.first.trim()
-    val answer = quiz.second.trim()
+    var quiz = Pair("", "") // by model.currentQuiz.collectAsState()
+    var question = ""
+    var answer = ""
+
+    if (answerStatus.toString().isNotEmpty()) {
+        successRate = model.successRate
+        numQuizDone = model.numQuizDone
+        numAttempted = model.numAttempted
+        quiz = model.currentQuiz
+        question = quiz.first
+        answer = quiz.second
+    }
 
     Column (
         modifier = Modifier
@@ -277,7 +286,6 @@ fun QuizFCard(
                 modifier = Modifier.width(80.dp),
                 onClick = {
                     // Change states to the next quiz
-                    // Takes care of the quiz state: (answerState == AnswerState.ALLDONE)
                     model.nextQuiz()
                     // clear the text field
                     userAnswer = ""
