@@ -16,20 +16,17 @@ class QuizModel(
     private val quizList: MutableList<Pair<String, String>> = mutableListOf()
     private var quizIndex: Int
     private val quizWeights: MutableList<Int>
-    // keep track of the number of question attempted
-    val numAttempted = MutableStateFlow(0)
-    // keep track of accuracy 0 to 1 (not percentage)
-    val successRate = MutableStateFlow(1F) // make private later!
-    // define a new state flow that is derived from the successRate state flow
-//    val successPercent: StateFlow<Int> = successRate.transform {rate ->
-//        emit((rate * 100).toInt())
-//    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 100)
-    // keep track of the number of questions finished/learned
-    val numQuizDone = MutableStateFlow(0)
-    // Answer status flow
-    val answerStatus = MutableStateFlow(AnswerStatus.NA)
-    // The individual quiz as a state flow
-    val currentQuiz = MutableStateFlow(Pair("", ""))
+
+    // Quiz State encapsulates all state variables
+    val state = MutableStateFlow(
+        QuizState(
+            currentQuiz = Pair("", ""),
+            answerStatus = AnswerStatus.NA,
+            numAttempted = 0,
+            successRate = 1F,
+            numQuizDone = 0
+        )
+    )
 
     init {
         readTextFile()
@@ -37,7 +34,8 @@ class QuizModel(
         // startIndex = Random.nextInt(quizList.size)
         // A mutable flow variable whose value will be collected in the UI
         quizIndex = Random.nextInt(quizList.size)
-        currentQuiz.value = quizList[quizIndex]
+        // Set the initial quiz state
+        state.value.currentQuiz = quizList[quizIndex]
         // A weight of 2 is assigned to each quiz initially.
         // The weight is reduced by 1 when the quiz is answered correctly.
         // The weight is reduced by 2 if the quiz is skipped.
@@ -55,12 +53,9 @@ class QuizModel(
     fun getAllQuiz(): MutableList<Pair<String, String>> {
         return quizList
     }
-    fun getCurrentQuiz(): Pair<String, String> {
-        return quizList[quizIndex]
-    }
 
     fun checkAnswer(userAnswer: String) {
-        val actualAnswer = currentQuiz.value.second.lowercase()
+        val actualAnswer = state.value.currentQuiz.second.lowercase()
         val uAnswer = userAnswer.trim().lowercase()
         val correct = if (userAnswer.length >= 4) {
             // compare against the actual answer
@@ -81,13 +76,13 @@ class QuizModel(
 
     fun markAsCorrect() {
         // should execute only if the question is Not Answered yet!
-        if (answerStatus.value != AnswerStatus.NA) return
+        if (state.value.answerStatus != AnswerStatus.NA) return
         // Otherwise
-        answerStatus.value = AnswerStatus.CORRECT
+        state.value.answerStatus = AnswerStatus.CORRECT
         // update the success rate
-        val numCorrectAnswers = successRate.value * numAttempted.value
-        numAttempted.value++
-        successRate.value = (numCorrectAnswers + 1)/numAttempted.value
+        val numCorrectAnswers = state.value.successRate * state.value.numAttempted
+        state.value.numAttempted++
+        state.value.successRate = (numCorrectAnswers + 1)/state.value.numAttempted
         // Subtract weight of this quiz
         quizWeights[quizIndex]--
         if(quizWeights[quizIndex] < 0) {
@@ -97,32 +92,32 @@ class QuizModel(
         }
         // update the number of Done questions
         if (quizWeights[quizIndex] == 0) {
-            numQuizDone.value++
+            state.value.numQuizDone++
         }
     }
 
     fun markAsWrong() {
         // should execute only if the question is Not Answered yet!
-        if (answerStatus.value != AnswerStatus.NA) return
+        if (state.value.answerStatus != AnswerStatus.NA) return
         // Otherwise
-        answerStatus.value = AnswerStatus.WRONG
+        state.value.answerStatus = AnswerStatus.WRONG
         // update the success rate
-        val numCorrectAnswers = successRate.value * numAttempted.value
-        numAttempted.value++
-        successRate.value = numCorrectAnswers/numAttempted.value
+        val numCorrectAnswers = state.value.successRate * state.value.numAttempted
+        state.value.numAttempted++
+        state.value.successRate = numCorrectAnswers/state.value.numAttempted
     }
 
     fun nextQuiz() {
         // Stop when all the weights are zero
-        if (numQuizDone.value == getSize()) {
-            answerStatus.value = AnswerStatus.ALLDONE
+        if (state.value.numQuizDone == getSize()) {
+            state.value.answerStatus = AnswerStatus.ALLDONE
         }
         else {
             // Reset the question by random sampling
             quizIndex = sampleIndex()
-            currentQuiz.value = quizList[quizIndex]
+            state.value.currentQuiz = quizList[quizIndex]
             // hide the correct answer!
-            answerStatus.value = AnswerStatus.NA
+            state.value.answerStatus = AnswerStatus.NA
         }
     }
 

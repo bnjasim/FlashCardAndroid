@@ -49,21 +49,14 @@ fun QuizFCard(
 ) {
     // Total number of quizzes
     val totalNumQuiz = model.getSize()
-    // answer status can be Correct/Wrong/Not Attempted/All Done!
-    val answerStatus by model.answerStatus.collectAsState()
-    // keep track of percentage/accuracy 0 to 1 (not percentage)
-    val successRate by model.successRate.collectAsState()
-    // val successPercent by model.successPercent.collectAsState()
-    // keep track of the number of questions finished/learned
-    val numQuizDone by model.numQuizDone.collectAsState()
-    // keep track of the number of question attempted
-    val numAttempted by model.numAttempted.collectAsState()
+    // Get the quiz state as a compose state variable
+    val quizState by model.state.collectAsState()
     // User typed answer in the text field
     var userAnswer by rememberSaveable { mutableStateOf("") }
+
     // The selected quiz
-    val quiz by model.currentQuiz.collectAsState()
-    val question = quiz.first.trim()
-    val answer = quiz.second.trim()
+    val question = quizState.currentQuiz.first.trim()
+    val answer = quizState.currentQuiz.second.trim()
 
     Column (
         modifier = Modifier
@@ -87,13 +80,13 @@ fun QuizFCard(
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )) {
-                    append("${(successRate*100).toInt()}%")
+                    append("${(quizState.successRate*100).toInt()}%")
                 }
             }
 
             // Text on the left
             Text(
-                text = "Quiz: $numAttempted",
+                text = "Quiz: $quizState.numAttempted",
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -117,7 +110,7 @@ fun QuizFCard(
 
             // Text on the right
             Text(
-                text = "Learned: $numQuizDone/$totalNumQuiz", // Replace with your actual success rate
+                text = "Learned: $quizState.numQuizDone/$totalNumQuiz", // Replace with your actual success rate
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -149,13 +142,13 @@ fun QuizFCard(
         ) {
             Column {
                 Text(
-                    text = when (answerStatus) {
+                    text = when (quizState.answerStatus) {
                         AnswerStatus.CORRECT -> "Correct!"
                         AnswerStatus.WRONG -> "Wrong"
                         AnswerStatus.NA -> ""
                         AnswerStatus.ALLDONE -> "Congratulations!\nAll Done!"
                     },
-                    color = when (answerStatus) {
+                    color = when (quizState.answerStatus) {
                         AnswerStatus.CORRECT, AnswerStatus.ALLDONE -> DarkGreen
                         AnswerStatus.WRONG -> Crimson
                         else -> MaterialTheme.colorScheme.primary
@@ -166,7 +159,8 @@ fun QuizFCard(
 
                 Text(
                     text = if (
-                        answerStatus == AnswerStatus.NA  || answerStatus == AnswerStatus.ALLDONE
+                        quizState.answerStatus == AnswerStatus.NA  ||
+                        quizState.answerStatus == AnswerStatus.ALLDONE
                         ) "" else answer,
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier
@@ -179,7 +173,7 @@ fun QuizFCard(
         Spacer(modifier = Modifier.height(16.dp))
 
         // if answer is too long, only require any 4 consecutive characters
-        if (quiz.second.length > 4) {
+        if (quizState.currentQuiz.second.length > 4) {
             // Display a small info text on top of the text field
             Text(
                 text = "Any consecutive 4 characters",
