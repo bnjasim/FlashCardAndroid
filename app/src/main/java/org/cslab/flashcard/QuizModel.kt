@@ -3,6 +3,7 @@ package org.cslab.flashcard
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -35,7 +36,10 @@ class QuizModel(
         // A mutable flow variable whose value will be collected in the UI
         quizIndex = Random.nextInt(quizList.size)
         // Set the initial quiz state
-        state.value.currentQuiz = quizList[quizIndex]
+        state.update { it.copy(
+            currentQuiz = quizList[quizIndex]
+        ) }
+        // Log.i("MyTag", state.value.numAttempted.toString())
         // A weight of 2 is assigned to each quiz initially.
         // The weight is reduced by 1 when the quiz is answered correctly.
         // The weight is reduced by 2 if the quiz is skipped.
@@ -78,11 +82,17 @@ class QuizModel(
         // should execute only if the question is Not Answered yet!
         if (state.value.answerStatus != AnswerStatus.NA) return
         // Otherwise
-        state.value.answerStatus = AnswerStatus.CORRECT
+        state.update { it.copy(
+            answerStatus = AnswerStatus.CORRECT
+        )}
         // update the success rate
         val numCorrectAnswers = state.value.successRate * state.value.numAttempted
-        state.value.numAttempted++
-        state.value.successRate = (numCorrectAnswers + 1)/state.value.numAttempted
+        state.update { it.copy(
+            numAttempted = it.numAttempted + 1
+        )}
+        state.update { it.copy(
+            successRate = (numCorrectAnswers + 1)/it.numAttempted
+        )}
         // Subtract weight of this quiz
         quizWeights[quizIndex]--
         if(quizWeights[quizIndex] < 0) {
@@ -92,7 +102,9 @@ class QuizModel(
         }
         // update the number of Done questions
         if (quizWeights[quizIndex] == 0) {
-            state.value.numQuizDone++
+            state.update { it.copy(
+                numQuizDone = it.numQuizDone
+            )}
         }
     }
 
@@ -100,24 +112,36 @@ class QuizModel(
         // should execute only if the question is Not Answered yet!
         if (state.value.answerStatus != AnswerStatus.NA) return
         // Otherwise
-        state.value.answerStatus = AnswerStatus.WRONG
+        state.update { it.copy(
+            answerStatus = AnswerStatus.WRONG
+        )}
         // update the success rate
         val numCorrectAnswers = state.value.successRate * state.value.numAttempted
-        state.value.numAttempted++
-        state.value.successRate = numCorrectAnswers/state.value.numAttempted
+        state.update { it.copy(
+            numAttempted = it.numAttempted + 1
+        )}
+        state.update { it.copy(
+            successRate = numCorrectAnswers/it.numAttempted
+        )}
     }
 
     fun nextQuiz() {
         // Stop when all the weights are zero
         if (state.value.numQuizDone == getSize()) {
-            state.value.answerStatus = AnswerStatus.ALLDONE
+            state.update { it.copy(
+                answerStatus = AnswerStatus.ALLDONE
+            )}
         }
         else {
             // Reset the question by random sampling
             quizIndex = sampleIndex()
-            state.value.currentQuiz = quizList[quizIndex]
+            state.update { it.copy(
+                currentQuiz = quizList[quizIndex]
+            )}
             // hide the correct answer!
-            state.value.answerStatus = AnswerStatus.NA
+            state.update { it.copy(
+                answerStatus = AnswerStatus.NA
+            )}
         }
     }
 

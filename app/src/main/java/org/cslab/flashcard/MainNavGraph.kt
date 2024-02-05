@@ -24,7 +24,7 @@ fun MainNavGraph(navController: NavHostController) {
                 })
         ) {
             var resourceId = it.arguments?.getInt("resourceId")
-            Log.i("myTag", resourceId.toString())
+            // Log.i("myTag", resourceId.toString())
             // if no argument is passed, set a default resource
             if (resourceId == null) {
                 resourceId = R.raw.current_affairs

@@ -86,7 +86,7 @@ fun QuizFCard(
 
             // Text on the left
             Text(
-                text = "Quiz: $quizState.numAttempted",
+                text = "Quiz: ${quizState.numAttempted}",
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -110,7 +110,7 @@ fun QuizFCard(
 
             // Text on the right
             Text(
-                text = "Learned: $quizState.numQuizDone/$totalNumQuiz", // Replace with your actual success rate
+                text = "Learned: ${quizState.numQuizDone/totalNumQuiz}", // Replace with your actual success rate
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.Bold
                 ),
